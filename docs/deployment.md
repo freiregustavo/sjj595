@@ -19,6 +19,10 @@ O comando de build gera o Prisma Client antes do build do Next.js:
 npm run build
 ```
 
+No modo standalone, o build tambem copia os assets estaticos para
+`.next/standalone/.next/static`, que e o caminho esperado pelo servidor
+standalone em producao.
+
 ## Start
 
 O projeto usa build standalone do Next.js para Railway:
