@@ -1,0 +1,424 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum FinancialStatus {
+  OPEN
+  PAID
+  OVERDUE
+  CANCELED
+}
+
+enum FinancialType {
+  INCOME
+  EXPENSE
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  TRANSFER
+  ADJUSTMENT
+}
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  document  String?
+  tenants   Tenant[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("organizations")
+}
+
+model Tenant {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  name           String
+  slug           String          @unique
+  status         Status          @default(ACTIVE)
+  branches       Branch[]
+  profiles       Profile[]
+  roles          UserRole[]
+  members        Member[]
+  memberHistory  MemberHistory[]
+  financialCategories FinancialCategory[]
+  receivables    Receivable[]
+  payables       Payable[]
+  cashMovements  CashMovement[]
+  inventoryItems InventoryItem[]
+  inventoryMovements InventoryMovement[]
+  inventoryBalances InventoryBalance[]
+  documentCategories DocumentCategory[]
+  documents      Document[]
+  emailTemplates EmailTemplate[]
+  emailLogs      EmailLog[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@map("tenants")
+}
+
+model Branch {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  name      String
+  code      String?
+  address   String?
+  city      String?
+  state     String?
+  status    Status    @default(ACTIVE)
+  profiles  Profile[]
+  members   Member[]
+  receivables Receivable[]
+  payables Payable[]
+  cashMovements CashMovement[]
+  inventoryMovements InventoryMovement[]
+  inventoryBalances InventoryBalance[]
+  documents Document[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, code])
+  @@map("branches")
+}
+
+model Profile {
+  id         String     @id @default(uuid()) @db.Uuid
+  authUserId String     @unique @map("auth_user_id") @db.Uuid
+  tenantId   String?    @map("tenant_id") @db.Uuid
+  tenant     Tenant?    @relation(fields: [tenantId], references: [id])
+  branchId   String?    @map("branch_id") @db.Uuid
+  branch     Branch?    @relation(fields: [branchId], references: [id])
+  name       String
+  email      String
+  phone      String?
+  status     Status     @default(ACTIVE)
+  userRoles  UserRole[]
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("profiles")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  key             String           @unique
+  name            String
+  description     String?
+  scope           String           @default("tenant")
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  key             String           @unique
+  module          String
+  description     String?
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  userId    String   @map("user_id") @db.Uuid
+  user      Profile  @relation(fields: [userId], references: [id])
+  roleId    String   @map("role_id") @db.Uuid
+  role      Role     @relation(fields: [roleId], references: [id])
+  branchId  String?  @map("branch_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, userId])
+  @@map("user_roles")
+}
+
+model Member {
+  id          String          @id @default(uuid()) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  branchId    String?         @map("branch_id") @db.Uuid
+  branch      Branch?         @relation(fields: [branchId], references: [id])
+  fullName    String          @map("full_name")
+  document    String?
+  birthDate   DateTime?       @map("birth_date") @db.Date
+  email       String?
+  phone       String?
+  address     String?
+  status      Status          @default(ACTIVE)
+  joinedAt    DateTime?       @map("joined_at") @db.Date
+  history     MemberHistory[]
+  receivables Receivable[]
+  documents   Document[]
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([tenantId, branchId])
+  @@map("members")
+}
+
+model MemberHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  memberId    String   @map("member_id") @db.Uuid
+  member      Member   @relation(fields: [memberId], references: [id])
+  eventType   String   @map("event_type")
+  description String?
+  createdBy   String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, memberId])
+  @@map("member_history")
+}
+
+model FinancialCategory {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  name        String
+  type        FinancialType
+  status      Status        @default(ACTIVE)
+  receivables Receivable[]
+  payables    Payable[]
+
+  @@index([tenantId])
+  @@map("financial_categories")
+}
+
+model Receivable {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  branchId    String?             @map("branch_id") @db.Uuid
+  branch      Branch?             @relation(fields: [branchId], references: [id])
+  memberId    String?             @map("member_id") @db.Uuid
+  member      Member?             @relation(fields: [memberId], references: [id])
+  categoryId  String?             @map("category_id") @db.Uuid
+  category    FinancialCategory?  @relation(fields: [categoryId], references: [id])
+  description String
+  amount      Decimal             @db.Decimal(12, 2)
+  dueDate     DateTime            @map("due_date") @db.Date
+  paidAt      DateTime?           @map("paid_at")
+  status      FinancialStatus     @default(OPEN)
+  createdBy   String?             @map("created_by") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  @@index([tenantId, branchId, status])
+  @@map("receivables")
+}
+
+model Payable {
+  id           String             @id @default(uuid()) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  branchId     String?            @map("branch_id") @db.Uuid
+  branch       Branch?            @relation(fields: [branchId], references: [id])
+  categoryId   String?            @map("category_id") @db.Uuid
+  category     FinancialCategory? @relation(fields: [categoryId], references: [id])
+  supplierName String?            @map("supplier_name")
+  description  String
+  amount       Decimal            @db.Decimal(12, 2)
+  dueDate      DateTime           @map("due_date") @db.Date
+  paidAt       DateTime?          @map("paid_at")
+  status       FinancialStatus    @default(OPEN)
+  createdBy    String?            @map("created_by") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  @@index([tenantId, branchId, status])
+  @@map("payables")
+}
+
+model CashMovement {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  branchId     String?       @map("branch_id") @db.Uuid
+  branch       Branch?       @relation(fields: [branchId], references: [id])
+  type         FinancialType
+  source       String
+  referenceId  String?       @map("reference_id") @db.Uuid
+  amount       Decimal       @db.Decimal(12, 2)
+  description  String?
+  movementDate DateTime      @map("movement_date")
+  createdBy    String?       @map("created_by") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([tenantId, branchId, movementDate])
+  @@map("cash_movements")
+}
+
+model InventoryItem {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  name        String
+  sku         String?
+  description String?
+  unit        String              @default("un")
+  status      Status              @default(ACTIVE)
+  movements   InventoryMovement[]
+  balances    InventoryBalance[]
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  @@unique([tenantId, sku])
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id             String                @id @default(uuid()) @db.Uuid
+  tenantId       String                @map("tenant_id") @db.Uuid
+  tenant         Tenant                @relation(fields: [tenantId], references: [id])
+  branchId       String?               @map("branch_id") @db.Uuid
+  branch         Branch?               @relation(fields: [branchId], references: [id])
+  itemId         String                @map("item_id") @db.Uuid
+  item           InventoryItem         @relation(fields: [itemId], references: [id])
+  type           InventoryMovementType
+  quantity       Decimal               @db.Decimal(12, 3)
+  reason         String?
+  sourceBranchId String?               @map("source_branch_id") @db.Uuid
+  targetBranchId String?               @map("target_branch_id") @db.Uuid
+  createdBy      String?               @map("created_by") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  @@index([tenantId, branchId, itemId])
+  @@map("inventory_movements")
+}
+
+model InventoryBalance {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  branchId  String        @map("branch_id") @db.Uuid
+  branch    Branch        @relation(fields: [branchId], references: [id])
+  itemId    String        @map("item_id") @db.Uuid
+  item      InventoryItem @relation(fields: [itemId], references: [id])
+  quantity  Decimal       @default(0) @db.Decimal(12, 3)
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@unique([tenantId, branchId, itemId])
+  @@map("inventory_balances")
+}
+
+model DocumentCategory {
+  id          String     @id @default(uuid()) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  name        String
+  description String?
+  status      Status     @default(ACTIVE)
+  documents   Document[]
+
+  @@index([tenantId])
+  @@map("document_categories")
+}
+
+model Document {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  branchId    String?           @map("branch_id") @db.Uuid
+  branch      Branch?           @relation(fields: [branchId], references: [id])
+  memberId    String?           @map("member_id") @db.Uuid
+  member      Member?           @relation(fields: [memberId], references: [id])
+  categoryId  String?           @map("category_id") @db.Uuid
+  category    DocumentCategory? @relation(fields: [categoryId], references: [id])
+  title       String
+  description String?
+  filePath    String            @map("file_path")
+  fileName    String            @map("file_name")
+  mimeType    String            @map("mime_type")
+  sizeBytes   Int               @map("size_bytes")
+  uploadedBy  String?           @map("uploaded_by") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  @@index([tenantId, branchId, memberId])
+  @@map("documents")
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  key       String
+  subject   String
+  body      String
+  status    Status   @default(ACTIVE)
+  logs      EmailLog[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, key])
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id         String         @id @default(uuid()) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  templateId String?        @map("template_id") @db.Uuid
+  template   EmailTemplate? @relation(fields: [templateId], references: [id])
+  recipient  String
+  subject    String
+  status     String
+  provider   String?
+  payload    Json?
+  sentAt     DateTime?      @map("sent_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("email_logs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  userId     String   @map("user_id") @db.Uuid
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, userId, createdAt])
+  @@map("audit_logs")
+}
