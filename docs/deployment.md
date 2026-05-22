@@ -30,7 +30,7 @@ npm run start
 Esse comando executa:
 
 ```bash
-node .next/standalone/server.js
+HOSTNAME=0.0.0.0 node .next/standalone/server.js
 ```
 
 ## Pre-deploy
