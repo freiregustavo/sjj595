@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "db:seed": "TMPDIR=/tmp tsx prisma/seed.ts",
+    "bootstrap:super-admin": "TMPDIR=/tmp tsx scripts/bootstrap-super-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
@@ -34,6 +36,10 @@
     "postcss": "^8.5.3",
     "prisma": "^6.8.2",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

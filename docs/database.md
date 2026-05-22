@@ -15,9 +15,12 @@ O schema inicial esta em `prisma/schema.prisma`.
 
 ## Tabelas operacionais
 
+- `masonic_entities`
 - `members`
+- `member_entity_memberships`
 - `member_history`
 - `financial_categories`
+- `financial_accounts`
 - `receivables`
 - `payables`
 - `cash_movements`

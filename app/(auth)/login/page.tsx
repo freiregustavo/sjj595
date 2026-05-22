@@ -1,3 +1,5 @@
+import { LoginForm } from "./login-form";
+
 export default function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6">
@@ -7,9 +9,9 @@ export default function LoginPage() {
         </p>
         <h1 className="mt-3 text-2xl font-semibold text-foreground">Entrar</h1>
         <p className="mt-2 text-sm leading-6 text-muted">
-          A tela de login sera conectada ao Supabase Auth na proxima etapa da
-          fundacao.
+          Acesse com o usuario vinculado a sua entidade.
         </p>
+        <LoginForm />
       </section>
     </main>
   );

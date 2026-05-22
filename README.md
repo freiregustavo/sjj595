@@ -22,10 +22,30 @@ Instale as dependencias quando Node.js/npm estiverem disponiveis:
 ```bash
 npm install
 npm run prisma:generate
+npm run db:seed
 npm run dev
 ```
 
 Copie `.env.example` para `.env` e preencha as variaveis do Supabase e PostgreSQL.
+
+## Primeiro acesso
+
+Depois de configurar `SUPABASE_SERVICE_ROLE_KEY` e os dados reais da entidade no
+`.env`, crie o primeiro Super Admin com:
+
+```bash
+npm run bootstrap:super-admin
+```
+
+Esse comando cria ou reutiliza:
+
+- usuario no Supabase Auth
+- organizacao
+- tenant
+- filial matriz
+- profile
+- papel `SUPER_ADMIN`
+- log de auditoria
 
 ## Documentacao
 

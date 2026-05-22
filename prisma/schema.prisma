@@ -34,6 +34,18 @@ enum InventoryMovementType {
   ADJUSTMENT
 }
 
+enum MasonicEntityKind {
+  LODGE
+  APPENDANT_BODY
+  OTHER
+}
+
+enum FinancialAccountKind {
+  GENERAL
+  ENTITY
+  BRANCH
+}
+
 model Organization {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -55,9 +67,12 @@ model Tenant {
   branches       Branch[]
   profiles       Profile[]
   roles          UserRole[]
+  entities       MasonicEntity[]
   members        Member[]
+  memberEntityMemberships MemberEntityMembership[]
   memberHistory  MemberHistory[]
   financialCategories FinancialCategory[]
+  financialAccounts FinancialAccount[]
   receivables    Receivable[]
   payables       Payable[]
   cashMovements  CashMovement[]
@@ -89,6 +104,7 @@ model Branch {
   members   Member[]
   receivables Receivable[]
   payables Payable[]
+  financialAccounts FinancialAccount[]
   cashMovements CashMovement[]
   inventoryMovements InventoryMovement[]
   inventoryBalances InventoryBalance[]
@@ -166,6 +182,30 @@ model UserRole {
   @@map("user_roles")
 }
 
+model MasonicEntity {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  name        String
+  code        String?
+  kind        MasonicEntityKind @default(OTHER)
+  description String?
+  status      Status            @default(ACTIVE)
+  isRequired  Boolean           @default(false) @map("is_required")
+  memberships MemberEntityMembership[]
+  financialAccounts FinancialAccount[]
+  receivables Receivable[]
+  payables    Payable[]
+  cashMovements CashMovement[]
+  documents   Document[]
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  @@unique([tenantId, code])
+  @@index([tenantId, kind])
+  @@map("masonic_entities")
+}
+
 model Member {
   id          String          @id @default(uuid()) @db.Uuid
   tenantId    String          @map("tenant_id") @db.Uuid
@@ -180,6 +220,7 @@ model Member {
   address     String?
   status      Status          @default(ACTIVE)
   joinedAt    DateTime?       @map("joined_at") @db.Date
+  entityMemberships MemberEntityMembership[]
   history     MemberHistory[]
   receivables Receivable[]
   documents   Document[]
@@ -188,6 +229,26 @@ model Member {
 
   @@index([tenantId, branchId])
   @@map("members")
+}
+
+model MemberEntityMembership {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  memberId  String        @map("member_id") @db.Uuid
+  member    Member        @relation(fields: [memberId], references: [id])
+  entityId  String        @map("entity_id") @db.Uuid
+  entity    MasonicEntity @relation(fields: [entityId], references: [id])
+  role      String?
+  status    Status        @default(ACTIVE)
+  joinedAt  DateTime?     @map("joined_at") @db.Date
+  leftAt    DateTime?     @map("left_at") @db.Date
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@unique([tenantId, memberId, entityId])
+  @@index([tenantId, entityId, status])
+  @@map("member_entity_memberships")
 }
 
 model MemberHistory {
@@ -219,12 +280,39 @@ model FinancialCategory {
   @@map("financial_categories")
 }
 
+model FinancialAccount {
+  id          String               @id @default(uuid()) @db.Uuid
+  tenantId    String               @map("tenant_id") @db.Uuid
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  branchId    String?              @map("branch_id") @db.Uuid
+  branch      Branch?              @relation(fields: [branchId], references: [id])
+  entityId    String?              @map("entity_id") @db.Uuid
+  entity      MasonicEntity?       @relation(fields: [entityId], references: [id])
+  name        String
+  code        String?
+  kind        FinancialAccountKind @default(ENTITY)
+  status      Status               @default(ACTIVE)
+  receivables Receivable[]
+  payables    Payable[]
+  cashMovements CashMovement[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@unique([tenantId, code])
+  @@index([tenantId, entityId, status])
+  @@map("financial_accounts")
+}
+
 model Receivable {
   id          String              @id @default(uuid()) @db.Uuid
   tenantId    String              @map("tenant_id") @db.Uuid
   tenant      Tenant              @relation(fields: [tenantId], references: [id])
   branchId    String?             @map("branch_id") @db.Uuid
   branch      Branch?             @relation(fields: [branchId], references: [id])
+  entityId    String?             @map("entity_id") @db.Uuid
+  entity      MasonicEntity?      @relation(fields: [entityId], references: [id])
+  accountId   String?             @map("account_id") @db.Uuid
+  account     FinancialAccount?   @relation(fields: [accountId], references: [id])
   memberId    String?             @map("member_id") @db.Uuid
   member      Member?             @relation(fields: [memberId], references: [id])
   categoryId  String?             @map("category_id") @db.Uuid
@@ -239,6 +327,8 @@ model Receivable {
   updatedAt   DateTime            @updatedAt @map("updated_at")
 
   @@index([tenantId, branchId, status])
+  @@index([tenantId, entityId, status])
+  @@index([tenantId, accountId, status])
   @@map("receivables")
 }
 
@@ -248,6 +338,10 @@ model Payable {
   tenant       Tenant             @relation(fields: [tenantId], references: [id])
   branchId     String?            @map("branch_id") @db.Uuid
   branch       Branch?            @relation(fields: [branchId], references: [id])
+  entityId     String?            @map("entity_id") @db.Uuid
+  entity       MasonicEntity?     @relation(fields: [entityId], references: [id])
+  accountId    String?            @map("account_id") @db.Uuid
+  account      FinancialAccount?  @relation(fields: [accountId], references: [id])
   categoryId   String?            @map("category_id") @db.Uuid
   category     FinancialCategory? @relation(fields: [categoryId], references: [id])
   supplierName String?            @map("supplier_name")
@@ -261,6 +355,8 @@ model Payable {
   updatedAt    DateTime           @updatedAt @map("updated_at")
 
   @@index([tenantId, branchId, status])
+  @@index([tenantId, entityId, status])
+  @@index([tenantId, accountId, status])
   @@map("payables")
 }
 
@@ -270,6 +366,10 @@ model CashMovement {
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   branchId     String?       @map("branch_id") @db.Uuid
   branch       Branch?       @relation(fields: [branchId], references: [id])
+  entityId     String?       @map("entity_id") @db.Uuid
+  entity       MasonicEntity? @relation(fields: [entityId], references: [id])
+  accountId    String?       @map("account_id") @db.Uuid
+  account      FinancialAccount? @relation(fields: [accountId], references: [id])
   type         FinancialType
   source       String
   referenceId  String?       @map("reference_id") @db.Uuid
@@ -280,6 +380,8 @@ model CashMovement {
   createdAt    DateTime      @default(now()) @map("created_at")
 
   @@index([tenantId, branchId, movementDate])
+  @@index([tenantId, entityId, movementDate])
+  @@index([tenantId, accountId, movementDate])
   @@map("cash_movements")
 }
 
@@ -355,6 +457,8 @@ model Document {
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
   branchId    String?           @map("branch_id") @db.Uuid
   branch      Branch?           @relation(fields: [branchId], references: [id])
+  entityId    String?           @map("entity_id") @db.Uuid
+  entity      MasonicEntity?    @relation(fields: [entityId], references: [id])
   memberId    String?           @map("member_id") @db.Uuid
   member      Member?           @relation(fields: [memberId], references: [id])
   categoryId  String?           @map("category_id") @db.Uuid
@@ -369,6 +473,7 @@ model Document {
   createdAt   DateTime          @default(now()) @map("created_at")
 
   @@index([tenantId, branchId, memberId])
+  @@index([tenantId, entityId])
   @@map("documents")
 }
 

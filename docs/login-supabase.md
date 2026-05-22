@@ -15,6 +15,12 @@ Direct connection string:
 postgresql://postgres:[YOUR-PASSWORD]@db.btcenuztvkaldvpvtiju.supabase.co:5432/postgres?sslmode=require
 ```
 
+IPv4 pooler usado em ambientes sem rota IPv6:
+
+```txt
+postgresql://postgres.btcenuztvkaldvpvtiju:[YOUR-PASSWORD]@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
 CLI setup commands:
 
 ```bash
