@@ -17,6 +17,9 @@ autenticada.
 ## Ambiente Railway + Supabase
 
 - Supabase project ref documentado: `btcenuztvkaldvpvtiju`.
+- Commit `343930f` (`Build tenant operations MVP`) foi enviado para
+  `origin/main`, pronto para o Railway consumir se o deploy automatico estiver
+  ligado ao GitHub.
 - Supabase e fonte de verdade para:
   - autenticacao de usuarios;
   - PostgreSQL acessado pelo Prisma;
@@ -46,6 +49,38 @@ autenticada.
   - roles/permissoes;
   - escrita em tabelas com `tenant_id`;
   - auditoria em `audit_logs`.
+
+## Validacao Supabase em 2026-05-25
+
+- Conexao via `psql` usando `DIRECT_URL` local funcionou.
+- Migrations aplicadas no Supabase:
+  - `20260522172000_init`
+  - `20260522183000_entities_and_financial_accounts`
+- Tenant ativo encontrado:
+  - `GESTAOFACIL_TENANT` / `gestaofacil-tenant`
+- Categorias financeiras padrao foram inseridas diretamente no Supabase de forma
+  idempotente para o tenant ativo:
+  - receitas: `Mensalidades`, `Doacoes`, `Eventos`
+  - despesas: `Administrativo`, `Manutencao`, `Fornecedores`
+- Resultado apos insercao:
+  - `INCOME`: 3 categorias
+  - `EXPENSE`: 3 categorias
+- Nao houve nova migration de schema neste commit; as mudancas foram de codigo,
+  UI, actions e bootstrap.
+
+## Validacao Railway em 2026-05-25
+
+- O commit foi publicado no GitHub.
+- Neste shell nao ha `railway`, `node`, `npm`, `npx` ou `supabase`, entao nao
+  foi possivel rodar build local, `prisma migrate deploy` via Prisma CLI, nem
+  consultar deploy Railway via CLI.
+- O `.env` local aponta `APP_URL` para `http://localhost:3000`; portanto ele nao
+  permite validar a URL publica do Railway daqui.
+- Proximo operador deve conferir no painel Railway:
+  - se o deploy do commit `343930f` iniciou/concluiu;
+  - se as variaveis obrigatorias estao configuradas;
+  - logs de build/runtime;
+  - login real e navegacao autenticada.
 
 ## Fundacao pronta
 
