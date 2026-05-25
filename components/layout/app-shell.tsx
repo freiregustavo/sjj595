@@ -7,20 +7,63 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
-  Users
+  Users,
+  type LucideIcon
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { getCurrentSession } from "@/lib/auth/session";
+import type { PermissionKey } from "@/lib/permissions/roles";
+import { prisma } from "@/lib/prisma/client";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Gauge },
-  { href: "/membros", label: "Membros", icon: Users },
-  { href: "/financeiro", label: "Financeiro", icon: Landmark },
-  { href: "/estoque", label: "Estoque", icon: Boxes },
-  { href: "/documentos", label: "Documentos", icon: FileText },
-  { href: "/configuracoes", label: "Configuracoes", icon: Settings },
-  { href: "/usuarios-permissoes", label: "Usuarios", icon: ShieldCheck }
-];
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: Gauge,
+    permission: "reports.read"
+  },
+  {
+    href: "/membros",
+    label: "Membros",
+    icon: Users,
+    permission: "members.read"
+  },
+  {
+    href: "/financeiro",
+    label: "Financeiro",
+    icon: Landmark,
+    permission: "finance.read"
+  },
+  {
+    href: "/estoque",
+    label: "Estoque",
+    icon: Boxes,
+    permission: "inventory.read"
+  },
+  {
+    href: "/documentos",
+    label: "Documentos",
+    icon: FileText,
+    permission: "documents.read"
+  },
+  {
+    href: "/configuracoes",
+    label: "Configuracoes",
+    icon: Settings,
+    permission: "settings.update"
+  },
+  {
+    href: "/usuarios-permissoes",
+    label: "Usuarios",
+    icon: ShieldCheck,
+    permission: "users.read"
+  }
+] satisfies {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  permission: PermissionKey;
+}[];
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -32,6 +75,38 @@ export async function AppShell({ children, title }: AppShellProps) {
   const profile = session.profile;
   const tenantName = profile?.tenant?.name ?? "Perfil sem loja";
   const branchName = profile?.branch?.name ?? "Sem filial";
+  const userRoles = profile?.tenant?.id
+    ? await prisma.userRole.findMany({
+        where: {
+          userId: profile.id,
+          OR: [{ tenantId: profile.tenant.id }, { tenantId: null }]
+        },
+        include: {
+          role: {
+            include: {
+              rolePermissions: {
+                include: {
+                  permission: true
+                }
+              }
+            }
+          }
+        }
+      })
+    : [];
+  const isSuperAdmin = userRoles.some(
+    (userRole) => userRole.role.key === "SUPER_ADMIN"
+  );
+  const permissions = new Set(
+    userRoles.flatMap((userRole) =>
+      userRole.role.rolePermissions.map(
+        (rolePermission) => rolePermission.permission.key
+      )
+    )
+  );
+  const visibleNavItems = navItems.filter(
+    (item) => isSuperAdmin || permissions.has(item.permission)
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,7 +118,7 @@ export async function AppShell({ children, title }: AppShellProps) {
           <p className="mt-1 text-sm text-muted">{tenantName}</p>
         </div>
         <nav className="flex flex-col gap-1 p-3">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
 
             return (

@@ -25,6 +25,14 @@ async function main() {
   const branchName = process.env.BOOTSTRAP_BRANCH_NAME ?? "Matriz";
   const primaryEntityName = process.env.BOOTSTRAP_PRIMARY_ENTITY_NAME ?? tenantName;
   const primaryEntityCode = process.env.BOOTSTRAP_PRIMARY_ENTITY_CODE ?? "LOJA";
+  const defaultCategories = [
+    { name: "Mensalidades", type: "INCOME" as const },
+    { name: "Doacoes", type: "INCOME" as const },
+    { name: "Eventos", type: "INCOME" as const },
+    { name: "Administrativo", type: "EXPENSE" as const },
+    { name: "Manutencao", type: "EXPENSE" as const },
+    { name: "Fornecedores", type: "EXPENSE" as const }
+  ];
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
@@ -178,6 +186,32 @@ async function main() {
         status: "ACTIVE"
       }
     });
+
+    for (const category of defaultCategories) {
+      const existingCategory = await tx.financialCategory.findFirst({
+        where: {
+          tenantId: tenant.id,
+          name: category.name,
+          type: category.type
+        }
+      });
+
+      if (existingCategory) {
+        await tx.financialCategory.update({
+          where: { id: existingCategory.id },
+          data: { status: "ACTIVE" }
+        });
+      } else {
+        await tx.financialCategory.create({
+          data: {
+            tenantId: tenant.id,
+            name: category.name,
+            type: category.type,
+            status: "ACTIVE"
+          }
+        });
+      }
+    }
 
     const profile = await tx.profile.upsert({
       where: {

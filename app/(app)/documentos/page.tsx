@@ -1,6 +1,9 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { requirePermission } from "@/lib/auth/permissions";
 
-export default function DocumentsPage() {
+export default async function DocumentsPage() {
+  await requirePermission("documents.read");
+
   return (
     <AppShell title="Documentos">
       <section className="rounded-md border border-border bg-surface p-5">

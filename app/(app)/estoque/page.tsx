@@ -1,6 +1,9 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { requirePermission } from "@/lib/auth/permissions";
 
-export default function InventoryPage() {
+export default async function InventoryPage() {
+  await requirePermission("inventory.read");
+
   return (
     <AppShell title="Estoque">
       <section className="rounded-md border border-border bg-surface p-5">
