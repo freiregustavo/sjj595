@@ -17,9 +17,9 @@ autenticada.
 ## Ambiente Railway + Supabase
 
 - Supabase project ref documentado: `btcenuztvkaldvpvtiju`.
-- Commit `343930f` (`Build tenant operations MVP`) foi enviado para
-  `origin/main`, pronto para o Railway consumir se o deploy automatico estiver
-  ligado ao GitHub.
+- Commit funcional `343930f` (`Build tenant operations MVP`) foi enviado para
+  `origin/main`; o topo atual do remoto e `6536ce3`, com este registro
+  operacional de validacao.
 - Supabase e fonte de verdade para:
   - autenticacao de usuarios;
   - PostgreSQL acessado pelo Prisma;
@@ -70,14 +70,14 @@ autenticada.
 
 ## Validacao Railway em 2026-05-25
 
-- O commit foi publicado no GitHub.
+- Os commits `343930f` e `6536ce3` foram publicados no GitHub.
 - Neste shell nao ha `railway`, `node`, `npm`, `npx` ou `supabase`, entao nao
   foi possivel rodar build local, `prisma migrate deploy` via Prisma CLI, nem
   consultar deploy Railway via CLI.
 - O `.env` local aponta `APP_URL` para `http://localhost:3000`; portanto ele nao
   permite validar a URL publica do Railway daqui.
 - Proximo operador deve conferir no painel Railway:
-  - se o deploy do commit `343930f` iniciou/concluiu;
+  - se o deploy do commit `6536ce3` iniciou/concluiu;
   - se as variaveis obrigatorias estao configuradas;
   - logs de build/runtime;
   - login real e navegacao autenticada.
