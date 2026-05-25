@@ -33,7 +33,10 @@ export default async function MembersPage() {
   return (
     <AppShell title="Membros">
       <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="cadastro"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Membros cadastrados
           </h2>
@@ -82,7 +85,10 @@ export default async function MembersPage() {
           </div>
         </section>
 
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="novo"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Novo membro
           </h2>

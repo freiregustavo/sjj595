@@ -148,9 +148,7 @@ async function assertUniqueCategory(input: {
     select: { id: true }
   });
 
-  if (existingCategory) {
-    throw new Error("Ja existe uma categoria ativa com este nome e tipo.");
-  }
+  return existingCategory;
 }
 
 async function assertRecordBelongsToTenant(
@@ -274,11 +272,16 @@ export async function createFinancialCategory(formData: FormData) {
   });
   const name = parsed.name.trim();
 
-  await assertUniqueCategory({
+  const existingCategory = await assertUniqueCategory({
     tenantId: context.tenantId,
     name,
     type: parsed.type
   });
+
+  if (existingCategory) {
+    revalidatePath("/financeiro");
+    return;
+  }
 
   const category = await prisma.financialCategory.create({
     data: {

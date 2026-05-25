@@ -1,12 +1,12 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { requirePermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma/client";
-import { createEntity, createFinancialAccount } from "./actions";
+import { createEntity, createFinancialAccount, createTenant } from "./actions";
 
 export default async function SettingsPage() {
   const context = await requirePermission("settings.update");
 
-  const [tenant, branches, entities, accounts] = await Promise.all([
+  const [tenant, branches, entities, accounts, tenants] = await Promise.all([
     prisma.tenant.findUnique({
       where: { id: context.tenantId },
       include: { organization: true }
@@ -23,13 +23,22 @@ export default async function SettingsPage() {
       where: { tenantId: context.tenantId },
       include: { entity: true, branch: true },
       orderBy: [{ kind: "asc" }, { name: "asc" }]
-    })
+    }),
+    context.isSuperAdmin
+      ? prisma.tenant.findMany({
+          include: { organization: true },
+          orderBy: { name: "asc" }
+        })
+      : Promise.resolve([])
   ]);
 
   return (
     <AppShell title="Configuracoes">
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="loja"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Loja principal
           </h2>
@@ -61,7 +70,10 @@ export default async function SettingsPage() {
           </dl>
         </section>
 
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="nova-entidade"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Nova entidade
           </h2>
@@ -98,8 +110,93 @@ export default async function SettingsPage() {
         </section>
       </div>
 
+      {context.isSuperAdmin ? (
+        <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_0.8fr]">
+          <section
+            id="tenants"
+            className="rounded-md border border-border bg-surface p-5"
+          >
+            <h2 className="text-base font-semibold text-foreground">
+              Tenants
+            </h2>
+            <div className="mt-4 overflow-hidden rounded-md border border-border">
+              <table className="w-full border-collapse text-sm">
+                <thead className="bg-background text-left text-xs uppercase text-muted">
+                  <tr>
+                    <th className="px-3 py-2">Tenant</th>
+                    <th className="px-3 py-2">Slug</th>
+                    <th className="px-3 py-2">Organizacao</th>
+                    <th className="px-3 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tenants.map((item) => (
+                    <tr key={item.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-medium text-foreground">
+                        {item.name}
+                      </td>
+                      <td className="px-3 py-2 text-muted">{item.slug}</td>
+                      <td className="px-3 py-2 text-muted">
+                        {item.organization.name}
+                      </td>
+                      <td className="px-3 py-2 text-muted">{item.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="novo-tenant"
+            className="rounded-md border border-border bg-surface p-5"
+          >
+            <h2 className="text-base font-semibold text-foreground">
+              Novo tenant
+            </h2>
+            <form action={createTenant} className="mt-4 grid gap-3">
+              <input
+                name="name"
+                required
+                placeholder="Tenant, ex.: SJJ595"
+                className="h-10 rounded-md border border-border px-3 text-sm"
+              />
+              <input
+                name="slug"
+                placeholder="Slug opcional, ex.: sjj595"
+                className="h-10 rounded-md border border-border px-3 text-sm"
+              />
+              <input
+                name="branchName"
+                required
+                defaultValue="Matriz"
+                placeholder="Filial matriz"
+                className="h-10 rounded-md border border-border px-3 text-sm"
+              />
+              <input
+                name="primaryEntityName"
+                required
+                placeholder="Entidade principal"
+                className="h-10 rounded-md border border-border px-3 text-sm"
+              />
+              <input
+                name="primaryEntityCode"
+                placeholder="Codigo da entidade principal"
+                className="h-10 rounded-md border border-border px-3 text-sm"
+              />
+              <button className="h-10 rounded-md bg-primary px-4 text-sm font-semibold text-white">
+                Criar tenant
+              </button>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="entidades"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Entidades vinculadas
           </h2>
@@ -134,7 +231,10 @@ export default async function SettingsPage() {
           </div>
         </section>
 
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="novo-caixa"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Novo caixa
           </h2>
@@ -188,7 +288,10 @@ export default async function SettingsPage() {
         </section>
       </div>
 
-      <section className="mt-5 rounded-md border border-border bg-surface p-5">
+      <section
+        id="caixas"
+        className="mt-5 rounded-md border border-border bg-surface p-5"
+      >
         <h2 className="text-base font-semibold text-foreground">Caixas</h2>
         <div className="mt-4 overflow-hidden rounded-md border border-border">
           <table className="w-full border-collapse text-sm">

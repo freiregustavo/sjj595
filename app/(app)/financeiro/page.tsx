@@ -172,7 +172,10 @@ export default async function FinancePage() {
       </div>
 
       {canCreate ? (
-        <section className="mt-5 rounded-md border border-border bg-surface p-5">
+        <section
+          id="categorias"
+          className="mt-5 rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Categorias financeiras
           </h2>
@@ -212,7 +215,10 @@ export default async function FinancePage() {
 
       {canCreate ? (
         <div className="mt-5 grid gap-5 xl:grid-cols-3">
-          <section className="rounded-md border border-border bg-surface p-5">
+          <section
+            id="nova-conta-a-receber"
+            className="rounded-md border border-border bg-surface p-5"
+          >
             <h2 className="text-base font-semibold text-foreground">
               Conta a receber
             </h2>
@@ -271,7 +277,10 @@ export default async function FinancePage() {
             </form>
           </section>
 
-          <section className="rounded-md border border-border bg-surface p-5">
+          <section
+            id="nova-conta-a-pagar"
+            className="rounded-md border border-border bg-surface p-5"
+          >
             <h2 className="text-base font-semibold text-foreground">
               Conta a pagar
             </h2>
@@ -324,7 +333,10 @@ export default async function FinancePage() {
             </form>
           </section>
 
-          <section className="rounded-md border border-border bg-surface p-5">
+          <section
+            id="movimento-caixa"
+            className="rounded-md border border-border bg-surface p-5"
+          >
             <h2 className="text-base font-semibold text-foreground">
               Movimento de caixa
             </h2>
@@ -372,6 +384,7 @@ export default async function FinancePage() {
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <FinanceTable
+          id="contas-a-receber"
           emptyText="Nenhuma conta a receber cadastrada."
           rows={receivables.map((receivable) => ({
             id: receivable.id,
@@ -393,6 +406,7 @@ export default async function FinancePage() {
           title="Contas a receber"
         />
         <FinanceTable
+          id="contas-a-pagar"
           emptyText="Nenhuma conta a pagar cadastrada."
           rows={payables.map((payable) => ({
             id: payable.id,
@@ -416,6 +430,7 @@ export default async function FinancePage() {
       </div>
 
       <FinanceTable
+        id="relatorios"
         className="mt-5"
         emptyText="Nenhum movimento de caixa registrado."
         rows={movements.map((movement) => ({
@@ -490,6 +505,7 @@ type FinanceTableProps = {
   actionLabel?: string;
   className?: string;
   emptyText: string;
+  id?: string;
   rows: {
     id: string;
     accountId: string | null;
@@ -509,11 +525,13 @@ function FinanceTable({
   actionLabel = "Baixar",
   className = "",
   emptyText,
+  id,
   rows,
   title
 }: FinanceTableProps) {
   return (
     <section
+      id={id}
       className={`rounded-md border border-border bg-surface p-5 ${className}`}
     >
       <h2 className="text-base font-semibold text-foreground">{title}</h2>

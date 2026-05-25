@@ -40,9 +40,9 @@ O frontend nunca define o tenant efetivo de uma operacao. O servidor resolve ten
 
 ## Modelo de dominio masonic
 
-- `tenant` representa a LOJA principal, por exemplo `ARLS Sao Joao de Jerusalem - 595`.
-- Toda loja possui ao menos uma entidade vinculada obrigatoria, que representa a propria loja operacional, por exemplo `LOJA SJJ 595`.
-- Uma loja pode possuir outras entidades vinculadas, como `Arco Real Capitulo 13`.
+- `tenant` representa a unidade operacional curta, por exemplo `SJJ595`.
+- Toda loja possui ao menos uma entidade vinculada obrigatoria, que representa a propria loja operacional, por exemplo `LOJA ARLS Sao Joao de Jerusalem 595`.
+- Uma loja pode possuir outras entidades vinculadas, como `Capitulo Sagrado Arco Real N.13`.
 - As entidades ficam apartadas por `masonic_entities`, sempre com `tenant_id`.
 - Membros pertencem ao cadastro geral da loja (`members`) e podem ser vinculados a uma ou mais entidades por `member_entity_memberships`.
 - O financeiro possui caixas/contas por loja ou entidade em `financial_accounts`.
@@ -51,11 +51,11 @@ O frontend nunca define o tenant efetivo de uma operacao. O servidor resolve ten
 Exemplo:
 
 ```txt
-LOJA / tenant: ARLS Sao Joao de Jerusalem - 595
-  Entidade 1: LOJA SJJ 595
-    Caixa: Caixa da LOJA SJJ 595
-  Entidade 2: Arco Real Capitulo 13
-    Caixa: Caixa do Capitulo Arco Real
+Tenant: SJJ595
+  Entidade 1: LOJA ARLS Sao Joao de Jerusalem 595
+    Caixa: Caixa da LOJA ARLS Sao Joao de Jerusalem 595
+  Entidade 2: Capitulo Sagrado Arco Real N.13
+    Caixa: Caixa do Capitulo Sagrado Arco Real N.13
   Caixa geral da loja: Caixa Geral
 ```
 

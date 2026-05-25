@@ -31,6 +31,33 @@ const accountSchema = z.object({
   branchId: z.string().uuid().optional().or(z.literal(""))
 });
 
+const tenantSchema = z.object({
+  name: z.string().min(2, "Informe o tenant."),
+  slug: z.string().optional(),
+  branchName: z.string().min(2, "Informe a filial matriz."),
+  primaryEntityName: z.string().min(2, "Informe a entidade principal."),
+  primaryEntityCode: z.string().optional()
+});
+
+const defaultCategories = [
+  { name: "Mensalidades", type: "INCOME" as const },
+  { name: "Doacoes", type: "INCOME" as const },
+  { name: "Eventos", type: "INCOME" as const },
+  { name: "Administrativo", type: "EXPENSE" as const },
+  { name: "Manutencao", type: "EXPENSE" as const },
+  { name: "Fornecedores", type: "EXPENSE" as const }
+];
+
+function normalizeSlug(value: string) {
+  return value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 async function assertUniqueEntityCode(tenantId: string, code: string) {
   const existingEntity = await prisma.masonicEntity.findFirst({
     where: { tenantId, code },
@@ -95,6 +122,127 @@ function validateAccountScope(parsed: z.infer<typeof accountSchema>) {
   if (parsed.kind === "BRANCH" && (!parsed.branchId || parsed.entityId)) {
     throw new Error("Caixa de filial precisa apenas de uma filial vinculada.");
   }
+}
+
+export async function createTenant(formData: FormData) {
+  const context = await requirePermission("settings.update");
+
+  if (!context.isSuperAdmin) {
+    throw new Error("Apenas Super Admin pode criar tenants.");
+  }
+
+  const parsed = tenantSchema.parse({
+    name: formData.get("name"),
+    slug: formData.get("slug") || undefined,
+    branchName: formData.get("branchName"),
+    primaryEntityName: formData.get("primaryEntityName"),
+    primaryEntityCode: formData.get("primaryEntityCode") || undefined
+  });
+  const slug = normalizeSlug(parsed.slug || parsed.name);
+  const primaryEntityCode = normalizeCode(
+    parsed.primaryEntityCode || parsed.primaryEntityName
+  );
+
+  if (!slug) {
+    throw new Error("Informe um slug valido para o tenant.");
+  }
+
+  if (!primaryEntityCode) {
+    throw new Error("Informe um codigo valido para a entidade principal.");
+  }
+
+  const existingTenant = await prisma.tenant.findUnique({
+    where: { slug },
+    select: { id: true }
+  });
+
+  if (existingTenant) {
+    throw new Error("Ja existe um tenant com este slug.");
+  }
+
+  const currentTenant = await prisma.tenant.findUnique({
+    where: { id: context.tenantId },
+    select: { organizationId: true }
+  });
+
+  if (!currentTenant) {
+    throw new Error("Tenant atual nao encontrado.");
+  }
+
+  const tenant = await prisma.$transaction(async (tx) => {
+    const createdTenant = await tx.tenant.create({
+      data: {
+        organizationId: currentTenant.organizationId,
+        name: parsed.name.trim(),
+        slug
+      }
+    });
+    const branch = await tx.branch.create({
+      data: {
+        tenantId: createdTenant.id,
+        name: parsed.branchName.trim(),
+        code: "MATRIZ",
+        status: "ACTIVE"
+      }
+    });
+    const entity = await tx.masonicEntity.create({
+      data: {
+        tenantId: createdTenant.id,
+        name: parsed.primaryEntityName.trim(),
+        code: primaryEntityCode,
+        kind: "LODGE",
+        isRequired: true,
+        status: "ACTIVE"
+      }
+    });
+
+    await tx.financialAccount.createMany({
+      data: [
+        {
+          tenantId: createdTenant.id,
+          name: "Caixa Geral",
+          code: "CAIXA_GERAL",
+          kind: "GENERAL",
+          status: "ACTIVE"
+        },
+        {
+          tenantId: createdTenant.id,
+          entityId: entity.id,
+          name: `Caixa da ${entity.name}`,
+          code: `CAIXA_${primaryEntityCode}`,
+          kind: "ENTITY",
+          status: "ACTIVE"
+        }
+      ]
+    });
+
+    await tx.financialCategory.createMany({
+      data: defaultCategories.map((category) => ({
+        tenantId: createdTenant.id,
+        name: category.name,
+        type: category.type,
+        status: "ACTIVE"
+      }))
+    });
+
+    return { branch, entity, tenant: createdTenant };
+  });
+
+  await auditLog({
+    tenantId: tenant.tenant.id,
+    userId: context.profileId,
+    action: "settings.tenant.create",
+    entityType: "tenants",
+    entityId: tenant.tenant.id,
+    payload: {
+      name: tenant.tenant.name,
+      slug: tenant.tenant.slug,
+      branchId: tenant.branch.id,
+      primaryEntityId: tenant.entity.id
+    }
+  });
+
+  revalidatePath("/configuracoes");
 }
 
 export async function createEntity(formData: FormData) {

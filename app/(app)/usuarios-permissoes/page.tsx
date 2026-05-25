@@ -37,7 +37,10 @@ export default async function UsersPermissionsPage() {
   return (
     <AppShell title="Usuarios e Permissoes">
       <div className="grid gap-5 xl:grid-cols-[1fr_0.7fr]">
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="usuarios"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Usuarios do tenant
           </h2>
@@ -84,7 +87,10 @@ export default async function UsersPermissionsPage() {
           </div>
         </section>
 
-        <section className="rounded-md border border-border bg-surface p-5">
+        <section
+          id="novo"
+          className="rounded-md border border-border bg-surface p-5"
+        >
           <h2 className="text-base font-semibold text-foreground">
             Novo usuario
           </h2>
@@ -146,6 +152,25 @@ export default async function UsersPermissionsPage() {
           )}
         </section>
       </div>
+
+      <section
+        id="permissoes"
+        className="mt-5 rounded-md border border-border bg-surface p-5"
+      >
+        <h2 className="text-base font-semibold text-foreground">
+          Papeis disponiveis
+        </h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {availableRoles.map((role) => (
+            <div key={role.id} className="rounded-md border border-border p-3">
+              <p className="text-sm font-semibold text-foreground">
+                {role.name}
+              </p>
+              <p className="mt-1 text-xs text-muted">{role.key}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </AppShell>
   );
 }

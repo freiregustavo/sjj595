@@ -56,17 +56,26 @@ autenticada.
 - Migrations aplicadas no Supabase:
   - `20260522172000_init`
   - `20260522183000_entities_and_financial_accounts`
-- Tenant ativo encontrado:
-  - `GESTAOFACIL_TENANT` / `gestaofacil-tenant`
+- Tenant ativo inicial estava com nome provisório e foi substituido por SJJ.
 - Categorias financeiras padrao foram inseridas diretamente no Supabase de forma
   idempotente para o tenant ativo:
   - receitas: `Mensalidades`, `Doacoes`, `Eventos`
   - despesas: `Administrativo`, `Manutencao`, `Fornecedores`
-- Resultado apos insercao:
-  - `INCOME`: 3 categorias
+- Resultado apos a ultima validacao:
+  - `INCOME`: 4 categorias
   - `EXPENSE`: 3 categorias
 - Nao houve nova migration de schema neste commit; as mudancas foram de codigo,
   UI, actions e bootstrap.
+- Em seguida, o tenant existente foi migrado preservando IDs e dados.
+- Ultimo estado validado do tenant principal:
+  - organizacao: `SJJ595`
+  - tenant: `SJJ595`
+  - slug: `sjj595`
+  - filial: `Matriz`
+  - entidade obrigatoria: `LOJA ARLS Sao Joao de Jerusalem 595`
+  - entidade vinculada: `Capitulo Sagrado Arco Real N.13`
+  - caixa da entidade: `Caixa da LOJA ARLS Sao Joao de Jerusalem 595`
+- O `.env` local e o `.env.example` foram alinhados para bootstrap SJJ.
 
 ## Validacao Railway em 2026-05-25
 
@@ -119,6 +128,12 @@ autenticada.
 - Usuarios e Permissoes ja lista profiles/papeis do tenant e cria novos usuarios
   via Supabase Admin, vinculando profile, filial e role no tenant atual.
 - Menu lateral filtra itens conforme permissoes do usuario.
+- Menu lateral foi reorganizado em submenus por modulo. Financeiro agora mostra
+  entradas como `Contas a Receber`, `Contas a Pagar` e `Relatorios`.
+- Super Admin agora tem seletor de tenant no topo da aplicacao e pode trocar o
+  tenant ativo via cookie seguro `active_tenant_id`.
+- Configuracoes permite ao Super Admin criar novos tenants, cada um com filial
+  matriz, entidade principal, caixas iniciais e categorias financeiras padrao.
 
 ## Pendencias tecnicas
 
@@ -131,6 +146,8 @@ autenticada.
   mesmos nomes esperados pelo codigo.
 - Melhorar UX das Server Actions para retornar mensagens amigaveis no formulario
   em vez de depender de erro de servidor.
+- Categoria financeira duplicada agora e tratada como operacao idempotente para
+  nao derrubar a rota com erro server-side.
 - Melhorar UX das baixas para exibir mensagens de erro inline quando caixa/data
   estiverem faltando.
 - Evoluir categorias financeiras para edicao/inativacao e possivel importacao
