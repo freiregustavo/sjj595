@@ -18,8 +18,10 @@ autenticada.
 
 - Supabase project ref documentado: `btcenuztvkaldvpvtiju`.
 - Commit funcional `343930f` (`Build tenant operations MVP`) foi enviado para
-  `origin/main`; o topo atual do remoto e `6536ce3`, com este registro
-  operacional de validacao.
+  `origin/main`.
+- Topo atual publicado no remoto: `090e959` (`Add tenant management and submenu
+  navigation`), com tenant switcher, criacao de tenants, submenus e ajuste
+  definitivo do tenant principal para `SJJ595`.
 - Supabase e fonte de verdade para:
   - autenticacao de usuarios;
   - PostgreSQL acessado pelo Prisma;
@@ -79,14 +81,15 @@ autenticada.
 
 ## Validacao Railway em 2026-05-25
 
-- Os commits `343930f` e `6536ce3` foram publicados no GitHub.
+- Os commits `343930f`, `6536ce3`, `4e100c0` e `090e959` foram publicados no
+  GitHub.
 - Neste shell nao ha `railway`, `node`, `npm`, `npx` ou `supabase`, entao nao
   foi possivel rodar build local, `prisma migrate deploy` via Prisma CLI, nem
   consultar deploy Railway via CLI.
 - O `.env` local aponta `APP_URL` para `http://localhost:3000`; portanto ele nao
   permite validar a URL publica do Railway daqui.
 - Proximo operador deve conferir no painel Railway:
-  - se o deploy do commit `6536ce3` iniciou/concluiu;
+  - se o deploy do commit `090e959` iniciou/concluiu;
   - se as variaveis obrigatorias estao configuradas;
   - logs de build/runtime;
   - login real e navegacao autenticada.
@@ -134,6 +137,13 @@ autenticada.
   tenant ativo via cookie seguro `active_tenant_id`.
 - Configuracoes permite ao Super Admin criar novos tenants, cada um com filial
   matriz, entidade principal, caixas iniciais e categorias financeiras padrao.
+- Decisao de dominio consolidada:
+  - tenant e unidade operacional curta, por exemplo `SJJ595`;
+  - entidade e a loja/corpo real, por exemplo `LOJA ARLS Sao Joao de Jerusalem 595`;
+  - outras entidades vinculadas entram no mesmo tenant, como
+    `Capitulo Sagrado Arco Real N.13`;
+  - Super Admin nao depende de tenant fake `ADMIN`; ele troca o tenant ativo no
+    topo da aplicacao.
 
 ## Pendencias tecnicas
 
@@ -146,8 +156,8 @@ autenticada.
   mesmos nomes esperados pelo codigo.
 - Melhorar UX das Server Actions para retornar mensagens amigaveis no formulario
   em vez de depender de erro de servidor.
-- Categoria financeira duplicada agora e tratada como operacao idempotente para
-  nao derrubar a rota com erro server-side.
+- Melhorar feedback visual de categoria financeira duplicada; hoje ela ja e
+  tratada como operacao idempotente e nao derruba a rota.
 - Melhorar UX das baixas para exibir mensagens de erro inline quando caixa/data
   estiverem faltando.
 - Evoluir categorias financeiras para edicao/inativacao e possivel importacao
