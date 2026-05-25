@@ -1,12 +1,19 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { requirePermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma/client";
-import { createTenantUser } from "./actions";
+import {
+  createTenantUser,
+  resetTenantUserPassword,
+  updateTenantUserRole,
+  updateTenantUserStatus
+} from "./actions";
 
 export default async function UsersPermissionsPage() {
   const context = await requirePermission("users.read");
   const canInvite =
     context.isSuperAdmin || context.permissions.includes("users.invite");
+  const canUpdateRoles =
+    context.isSuperAdmin || context.permissions.includes("users.update_roles");
 
   const [profiles, roles, branches] = await Promise.all([
     prisma.profile.findMany({
@@ -53,6 +60,7 @@ export default async function UsersPermissionsPage() {
                   <th className="px-3 py-2">Filial</th>
                   <th className="px-3 py-2">Papeis</th>
                   <th className="px-3 py-2">Status</th>
+                  {canUpdateRoles ? <th className="px-3 py-2">Acoes</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -73,11 +81,105 @@ export default async function UsersPermissionsPage() {
                         : "-"}
                     </td>
                     <td className="px-3 py-2 text-muted">{profile.status}</td>
+                    {canUpdateRoles ? (
+                      <td className="px-3 py-2">
+                        <div className="grid min-w-72 gap-3">
+                          <form
+                            action={updateTenantUserRole}
+                            className="grid gap-2"
+                          >
+                            <input
+                              type="hidden"
+                              name="profileId"
+                              value={profile.id}
+                            />
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <select
+                                name="roleId"
+                                required
+                                defaultValue={profile.userRoles[0]?.roleId ?? ""}
+                                className="h-8 rounded-md border border-border px-2 text-xs"
+                              >
+                                <option value="">Papel</option>
+                                {availableRoles.map((role) => (
+                                  <option key={role.id} value={role.id}>
+                                    {role.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                name="branchId"
+                                defaultValue={profile.branchId ?? ""}
+                                className="h-8 rounded-md border border-border px-2 text-xs"
+                              >
+                                <option value="">Filial atual</option>
+                                {branches.map((branch) => (
+                                  <option key={branch.id} value={branch.id}>
+                                    {branch.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <button className="h-8 rounded-md border border-border px-3 text-xs font-semibold text-foreground hover:bg-background">
+                              Atualizar papel
+                            </button>
+                          </form>
+
+                          <form
+                            action={updateTenantUserStatus}
+                            className="grid gap-2 sm:grid-cols-[1fr_auto]"
+                          >
+                            <input
+                              type="hidden"
+                              name="profileId"
+                              value={profile.id}
+                            />
+                            <select
+                              name="status"
+                              defaultValue={profile.status}
+                              className="h-8 rounded-md border border-border px-2 text-xs"
+                            >
+                              <option value="ACTIVE">Ativo</option>
+                              <option value="INACTIVE">Inativo</option>
+                              <option value="SUSPENDED">Suspenso</option>
+                            </select>
+                            <button className="h-8 rounded-md border border-border px-3 text-xs font-semibold text-foreground hover:bg-background">
+                              Status
+                            </button>
+                          </form>
+
+                          <form
+                            action={resetTenantUserPassword}
+                            className="grid gap-2 sm:grid-cols-[1fr_auto]"
+                          >
+                            <input
+                              type="hidden"
+                              name="profileId"
+                              value={profile.id}
+                            />
+                            <input
+                              name="password"
+                              required
+                              type="password"
+                              minLength={8}
+                              placeholder="Nova senha"
+                              className="h-8 rounded-md border border-border px-2 text-xs"
+                            />
+                            <button className="h-8 rounded-md border border-border px-3 text-xs font-semibold text-foreground hover:bg-background">
+                              Resetar
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
                 {profiles.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-6 text-center text-muted" colSpan={5}>
+                    <td
+                      className="px-3 py-6 text-center text-muted"
+                      colSpan={canUpdateRoles ? 6 : 5}
+                    >
                       Nenhum usuario cadastrado neste tenant.
                     </td>
                   </tr>

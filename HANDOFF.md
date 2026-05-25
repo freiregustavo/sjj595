@@ -130,6 +130,14 @@ autenticada.
   permissao de leitura.
 - Usuarios e Permissoes ja lista profiles/papeis do tenant e cria novos usuarios
   via Supabase Admin, vinculando profile, filial e role no tenant atual.
+- Usuarios e Permissoes tambem permite, para quem tem `users.update_roles`:
+  - trocar papel e filial do usuario;
+  - ativar, inativar ou suspender profile;
+  - resetar senha via Supabase Admin.
+- Travas de seguranca em usuarios:
+  - usuario nao altera o proprio papel;
+  - usuario nao inativa o proprio profile;
+  - somente Super Admin administra outro Super Admin.
 - Menu lateral filtra itens conforme permissoes do usuario.
 - Menu lateral foi reorganizado em submenus por modulo. Financeiro agora mostra
   entradas como `Contas a Receber`, `Contas a Pagar` e `Relatorios`.
@@ -162,8 +170,8 @@ autenticada.
   estiverem faltando.
 - Evoluir categorias financeiras para edicao/inativacao e possivel importacao
   inicial por template.
-- Evoluir Usuarios e Permissoes com edicao de roles, inativacao de usuarios,
-  reset de senha e envio de convite/e-mail transacional.
+- Evoluir Usuarios e Permissoes com convite/e-mail transacional e feedback
+  inline de erros/sucesso nas operacoes administrativas.
 - Revisar e aplicar RLS real no Supabase; o arquivo atual em
   `supabase/rls/001_initial_policies.sql` ainda e rascunho.
 - Implementar CRUDs reais de Estoque e Documentos, e montar os Relatorios.
@@ -173,7 +181,7 @@ autenticada.
 Validar o build em ambiente com Node.js e confirmar deploy no Railway apontando
 para o Supabase. Depois disso, os proximos blocos naturais sao:
 
-- Usuarios e Permissoes: editar roles, inativar usuarios, resetar senha e trocar
-  convite manual por e-mail transacional.
+- Usuarios e Permissoes: trocar convite manual por e-mail transacional e
+  melhorar feedback visual das acoes administrativas.
 - Financeiro: conciliacao basica, filtros por entidade/caixa e relatorio mensal.
 - Documentos: bucket privado no Supabase Storage, upload e URL assinada.

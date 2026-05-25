@@ -17,6 +17,22 @@ const userSchema = z.object({
   branchId: optionalUuid
 });
 
+const roleUpdateSchema = z.object({
+  profileId: z.string().uuid(),
+  roleId: z.string().uuid(),
+  branchId: optionalUuid
+});
+
+const statusUpdateSchema = z.object({
+  profileId: z.string().uuid(),
+  status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"])
+});
+
+const passwordResetSchema = z.object({
+  profileId: z.string().uuid(),
+  password: z.string().min(8, "A nova senha deve ter ao menos 8 caracteres.")
+});
+
 async function assertBranchBelongsToTenant(branchId: string, tenantId: string) {
   const branch = await prisma.branch.findFirst({
     where: {
@@ -66,6 +82,64 @@ async function resolveAuthUserId(input: {
   }
 
   return authUserId;
+}
+
+async function assertProfileBelongsToTenant(profileId: string, tenantId: string) {
+  const profile = await prisma.profile.findFirst({
+    where: {
+      id: profileId,
+      tenantId
+    },
+    select: {
+      authUserId: true,
+      email: true,
+      id: true,
+      name: true,
+      status: true
+    }
+  });
+
+  if (!profile) {
+    throw new Error("Usuario invalido para este tenant.");
+  }
+
+  return profile;
+}
+
+async function assertCanManageProfile(input: {
+  actorIsSuperAdmin: boolean;
+  profileId: string;
+  tenantId: string;
+}) {
+  const targetSuperAdminRole = await prisma.userRole.findFirst({
+    where: {
+      userId: input.profileId,
+      OR: [{ tenantId: input.tenantId }, { tenantId: null }],
+      role: { key: "SUPER_ADMIN" }
+    },
+    select: { id: true }
+  });
+
+  if (targetSuperAdminRole && !input.actorIsSuperAdmin) {
+    throw new Error("Apenas Super Admin pode administrar outro Super Admin.");
+  }
+}
+
+async function assertRoleCanBeGranted(roleId: string, isSuperAdmin: boolean) {
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+    select: { id: true, key: true, name: true }
+  });
+
+  if (!role) {
+    throw new Error("Papel invalido.");
+  }
+
+  if (role.key === "SUPER_ADMIN" && !isSuperAdmin) {
+    throw new Error("Apenas Super Admin pode conceder papel Super Admin.");
+  }
+
+  return role;
 }
 
 export async function createTenantUser(formData: FormData) {
@@ -155,6 +229,156 @@ export async function createTenantUser(formData: FormData) {
       email,
       role: role.key,
       branchId: parsed.branchId || context.branchId
+    }
+  });
+
+  revalidatePath("/usuarios-permissoes");
+}
+
+export async function updateTenantUserRole(formData: FormData) {
+  const context = await requirePermission("users.update_roles");
+  const parsed = roleUpdateSchema.parse({
+    profileId: formData.get("profileId"),
+    roleId: formData.get("roleId"),
+    branchId: formData.get("branchId") || ""
+  });
+  const [profile, role] = await Promise.all([
+    assertProfileBelongsToTenant(parsed.profileId, context.tenantId),
+    assertRoleCanBeGranted(parsed.roleId, context.isSuperAdmin)
+  ]);
+
+  if (profile.id === context.profileId) {
+    throw new Error("Voce nao pode alterar o proprio papel.");
+  }
+
+  await assertCanManageProfile({
+    actorIsSuperAdmin: context.isSuperAdmin,
+    profileId: profile.id,
+    tenantId: context.tenantId
+  });
+
+  if (parsed.branchId) {
+    await assertBranchBelongsToTenant(parsed.branchId, context.tenantId);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.userRole.deleteMany({
+      where: {
+        tenantId: context.tenantId,
+        userId: profile.id
+      }
+    });
+
+    await tx.userRole.create({
+      data: {
+        tenantId: context.tenantId,
+        userId: profile.id,
+        roleId: role.id,
+        branchId: parsed.branchId || context.branchId
+      }
+    });
+
+    await tx.profile.update({
+      where: { id: profile.id },
+      data: {
+        branchId: parsed.branchId || context.branchId
+      }
+    });
+  });
+
+  await auditLog({
+    tenantId: context.tenantId,
+    userId: context.profileId,
+    action: "users.role.update",
+    entityType: "profiles",
+    entityId: profile.id,
+    payload: {
+      email: profile.email,
+      role: role.key,
+      branchId: parsed.branchId || context.branchId
+    }
+  });
+
+  revalidatePath("/usuarios-permissoes");
+}
+
+export async function updateTenantUserStatus(formData: FormData) {
+  const context = await requirePermission("users.update_roles");
+  const parsed = statusUpdateSchema.parse({
+    profileId: formData.get("profileId"),
+    status: formData.get("status")
+  });
+  const profile = await assertProfileBelongsToTenant(
+    parsed.profileId,
+    context.tenantId
+  );
+
+  await assertCanManageProfile({
+    actorIsSuperAdmin: context.isSuperAdmin,
+    profileId: profile.id,
+    tenantId: context.tenantId
+  });
+
+  if (profile.id === context.profileId && parsed.status !== "ACTIVE") {
+    throw new Error("Voce nao pode inativar o proprio usuario.");
+  }
+
+  const updated = await prisma.profile.update({
+    where: { id: profile.id },
+    data: {
+      status: parsed.status
+    }
+  });
+
+  await auditLog({
+    tenantId: context.tenantId,
+    userId: context.profileId,
+    action: "users.status.update",
+    entityType: "profiles",
+    entityId: profile.id,
+    payload: {
+      email: profile.email,
+      status: updated.status
+    }
+  });
+
+  revalidatePath("/usuarios-permissoes");
+}
+
+export async function resetTenantUserPassword(formData: FormData) {
+  const context = await requirePermission("users.update_roles");
+  const parsed = passwordResetSchema.parse({
+    profileId: formData.get("profileId"),
+    password: formData.get("password")
+  });
+  const profile = await assertProfileBelongsToTenant(
+    parsed.profileId,
+    context.tenantId
+  );
+
+  await assertCanManageProfile({
+    actorIsSuperAdmin: context.isSuperAdmin,
+    profileId: profile.id,
+    tenantId: context.tenantId
+  });
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.auth.admin.updateUserById(profile.authUserId, {
+    password: parsed.password
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  await auditLog({
+    tenantId: context.tenantId,
+    userId: context.profileId,
+    action: "users.password.reset",
+    entityType: "profiles",
+    entityId: profile.id,
+    payload: {
+      email: profile.email
     }
   });
 
