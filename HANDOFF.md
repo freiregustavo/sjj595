@@ -19,9 +19,10 @@ autenticada.
 - Supabase project ref documentado: `btcenuztvkaldvpvtiju`.
 - Commit funcional `343930f` (`Build tenant operations MVP`) foi enviado para
   `origin/main`.
-- Topo atual publicado no remoto: `090e959` (`Add tenant management and submenu
-  navigation`), com tenant switcher, criacao de tenants, submenus e ajuste
-  definitivo do tenant principal para `SJJ595`.
+- Topo atual publicado no remoto antes desta rodada: `799acb1` (`Add user
+  access administration`), com tenant switcher, criacao de tenants, submenus,
+  ajuste definitivo do tenant principal para `SJJ595` e administracao inicial
+  de usuarios.
 - Supabase e fonte de verdade para:
   - autenticacao de usuarios;
   - PostgreSQL acessado pelo Prisma;
@@ -139,12 +140,22 @@ autenticada.
   - usuario nao inativa o proprio profile;
   - somente Super Admin administra outro Super Admin.
 - Menu lateral filtra itens conforme permissoes do usuario.
-- Menu lateral foi reorganizado em submenus por modulo. Financeiro agora mostra
-  entradas como `Contas a Receber`, `Contas a Pagar` e `Relatorios`.
+- Menu lateral foi evoluido para DownDrill/sanfona por modulo, inclusive em
+  mobile. Financeiro mostra entradas como `Contas a Receber`, `Contas a Pagar`
+  e `Relatorios`.
+- Dark mode implementado com variaveis CSS globais, seletor no topo e
+  persistencia em `localStorage`.
 - Super Admin agora tem seletor de tenant no topo da aplicacao e pode trocar o
   tenant ativo via cookie seguro `active_tenant_id`.
 - Configuracoes permite ao Super Admin criar novos tenants, cada um com filial
   matriz, entidade principal, caixas iniciais e categorias financeiras padrao.
+- Documentos saiu de placeholder inicial:
+  - cria categorias de documentos por tenant de forma idempotente;
+  - faz upload para bucket privado Supabase Storage `tenant-documents`;
+  - grava metadados em `documents`;
+  - valida filial, entidade, membro e categoria contra o tenant ativo;
+  - gera download protegido por rota server-side com URL assinada de 60s;
+  - registra auditoria em criacao de categoria e upload.
 - Decisao de dominio consolidada:
   - tenant e unidade operacional curta, por exemplo `SJJ595`;
   - entidade e a loja/corpo real, por exemplo `LOJA ARLS Sao Joao de Jerusalem 595`;
@@ -174,14 +185,16 @@ autenticada.
   inline de erros/sucesso nas operacoes administrativas.
 - Revisar e aplicar RLS real no Supabase; o arquivo atual em
   `supabase/rls/001_initial_policies.sql` ainda e rascunho.
-- Implementar CRUDs reais de Estoque e Documentos, e montar os Relatorios.
+- Confirmar no Supabase se o bucket privado `tenant-documents` foi criado pelo
+  primeiro upload ou criar manualmente antes da validacao.
+- Evoluir Documentos com exclusao logica/fisica, versao de arquivo e filtros.
+- Implementar CRUD real de Estoque e montar os Relatorios.
 
 ## Proximo melhor passo
 
 Validar o build em ambiente com Node.js e confirmar deploy no Railway apontando
 para o Supabase. Depois disso, os proximos blocos naturais sao:
 
-- Usuarios e Permissoes: trocar convite manual por e-mail transacional e
-  melhorar feedback visual das acoes administrativas.
+- Validar upload/download de Documento no Railway com Supabase Storage privado.
+- Estoque: cadastro de itens, entrada/saida/transferencia e saldo por filial.
 - Financeiro: conciliacao basica, filtros por entidade/caixa e relatorio mensal.
-- Documentos: bucket privado no Supabase Storage, upload e URL assinada.

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   Boxes,
   FileText,
@@ -7,8 +6,7 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
-  Users,
-  type LucideIcon
+  Users
 } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { switchTenant } from "@/components/layout/actions";
@@ -16,6 +14,8 @@ import { getAuthorizedContext } from "@/lib/auth/permissions";
 import { getCurrentSession } from "@/lib/auth/session";
 import type { PermissionKey } from "@/lib/permissions/roles";
 import { prisma } from "@/lib/prisma/client";
+import { SidebarNav, type SidebarNavItem } from "./sidebar-nav";
+import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
   {
@@ -92,7 +92,7 @@ const navItems = [
 ] satisfies {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: SidebarNavItem["icon"];
   permission: PermissionKey;
   children?: {
     href: string;
@@ -166,50 +166,33 @@ export async function AppShell({ children, title }: AppShellProps) {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-surface md:block">
+    <div className="min-h-screen bg-background text-foreground">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-border bg-surface/95 shadow-[var(--shadow-soft)] backdrop-blur md:block">
         <div className="border-b border-border px-5 py-5">
-          <p className="text-sm font-semibold uppercase tracking-wide text-accent">
-            SJJ595
-          </p>
-          <p className="mt-1 text-sm text-muted">{tenantName}</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-sm font-bold text-white">
+              S
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold uppercase text-foreground">
+                SJJ595
+              </p>
+              <p className="mt-1 truncate text-sm text-muted">{tenantName}</p>
+            </div>
+          </div>
         </div>
-        <nav className="flex flex-col gap-1 p-3">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <div key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-foreground hover:bg-background"
-                >
-                  <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-                  {item.label}
-                </Link>
-                {item.children ? (
-                  <div className="ml-7 grid gap-1 border-l border-border pl-3">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className="rounded-md px-2 py-1.5 text-xs font-medium text-muted hover:bg-background hover:text-foreground"
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </nav>
+        <SidebarNav items={visibleNavItems} />
       </aside>
 
-      <div className="md:pl-64">
-        <header className="sticky top-0 z-10 border-b border-border bg-surface/95 px-5 py-4 backdrop-blur">
+      <div className="md:pl-72">
+        <header className="sticky top-0 z-10 border-b border-border bg-surface/90 px-5 py-4 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+              <p className="mt-1 text-xs text-muted">
+                {tenantName} / {branchName}
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               {context.isSuperAdmin ? (
                 <form action={switchTenant} className="flex items-center gap-2">
@@ -237,10 +220,11 @@ export async function AppShell({ children, title }: AppShellProps) {
                   {tenantName} / {branchName}
                 </span>
               </div>
+              <ThemeToggle />
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-background"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground shadow-sm hover:bg-background"
                   title="Sair"
                 >
                   <LogOut className="h-4 w-4" aria-hidden="true" />
@@ -250,7 +234,10 @@ export async function AppShell({ children, title }: AppShellProps) {
             </div>
           </div>
         </header>
-        <main className="p-5">
+        <div className="border-b border-border bg-surface/95 md:hidden">
+          <SidebarNav items={visibleNavItems} />
+        </div>
+        <main className="p-5 lg:p-6">
           {!profile ? (
             <section className="rounded-md border border-danger/30 bg-danger/10 p-5 text-sm text-danger">
               Seu usuario esta autenticado, mas ainda nao possui profile ativo

@@ -4,6 +4,30 @@
 
 :root {
   color-scheme: light;
+  --color-background: 244 246 248;
+  --color-foreground: 24 32 42;
+  --color-surface: 255 255 255;
+  --color-border: 216 222 232;
+  --color-muted: 101 112 130;
+  --color-primary: 22 79 99;
+  --color-accent: 174 124 35;
+  --color-success: 40 122 75;
+  --color-danger: 180 35 24;
+  --shadow-soft: 0 18px 45px rgb(20 31 43 / 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+  --color-background: 12 17 23;
+  --color-foreground: 232 238 246;
+  --color-surface: 19 27 36;
+  --color-border: 51 65 82;
+  --color-muted: 151 163 180;
+  --color-primary: 92 174 198;
+  --color-accent: 218 169 72;
+  --color-success: 81 179 122;
+  --color-danger: 241 104 93;
+  --shadow-soft: 0 18px 45px rgb(0 0 0 / 0.32);
 }
 
 * {
@@ -17,11 +41,25 @@ body {
 
 body {
   margin: 0;
-  background: #f6f7f9;
-  color: #18202a;
+  background:
+    radial-gradient(circle at top left, rgb(var(--color-primary) / 0.08), transparent 32rem),
+    rgb(var(--color-background));
+  color: rgb(var(--color-foreground));
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+input,
+select,
+textarea {
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-foreground));
+}
+
+::selection {
+  background: rgb(var(--color-primary) / 0.22);
 }
